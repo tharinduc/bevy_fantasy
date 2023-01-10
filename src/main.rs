@@ -3,11 +3,15 @@ use bevy::window::{PresentMode, Windows};
 
 mod enemy;
 mod player;
+mod bullet;
 
+const WINDOW_WIDTH: f32 = 640.0;
+const WINDOW_HEIGHT: f32 = 480.0;
 const PLAYER_SPRITE: &str = "player.png";
 const ENEMY_SPRITE: &str = "enemy.png";
+const BULLET_SPRITE: &str = "bullet.png";
 const TIME_STEP: f32 = 1.0 / 60.0;
-const BASE_SPEED: f32 = 500.0;
+const BASE_SPEED: f32 = 200.0;
 
 fn main() {
     App::new()
@@ -15,8 +19,8 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
                 title: "Bevy Fantasy".to_string(),
-                width: 640.0,
-                height: 480.0,
+                width: WINDOW_WIDTH,
+                height: WINDOW_HEIGHT,
                 present_mode: PresentMode::AutoVsync,
                 resizable: false,
                 ..default()
@@ -25,10 +29,9 @@ fn main() {
         }))
         .add_plugin(player::PlayerPlugin)
         .add_plugin(enemy::EnemyPlugin)
+        .add_plugin(bullet::BulletPlugin)
         .add_startup_system_to_stage(StartupStage::PreStartup, load_textures)
         .add_startup_system(setup)
-        .add_system(hanlde_input)
-        .add_system(change_clear_color)
         .add_system(close_window)
         .run();
 }
@@ -44,33 +47,11 @@ fn close_window(input: Res<Input<KeyCode>>, mut windows: ResMut<Windows>) {
     }
 }
 
-fn hanlde_input(input: Res<Input<KeyCode>>, mut query: Query<&mut Velocity, With<Player>>) {
-    if let Ok(mut velocity) = query.get_single_mut() {
-        if input.pressed(KeyCode::Left) {
-            velocity.x = -1.0;
-        } else if input.pressed(KeyCode::Right) {
-            velocity.x = 1.0;
-        } else if input.pressed(KeyCode::Up) {
-            velocity.y = 1.0;
-        } else if input.pressed(KeyCode::Down) {
-            velocity.y = -1.0;
-        } else {
-            velocity.x = 0.0;
-            velocity.y = 0.0;
-        }
-    }
-}
-
-fn change_clear_color(input: Res<Input<KeyCode>>, mut clear_color: ResMut<ClearColor>) {
-    if input.just_pressed(KeyCode::Space) {
-        clear_color.0 = Color::PURPLE;
-    }
-}
-
 fn load_textures(mut commands: Commands, asset_server: Res<AssetServer>) {
     let game_textures = GameTextures {
         player: asset_server.load(PLAYER_SPRITE),
         enemy: asset_server.load(ENEMY_SPRITE),
+        bullet: asset_server.load(BULLET_SPRITE),
     };
     commands.insert_resource(game_textures);
 }
@@ -79,13 +60,27 @@ fn load_textures(mut commands: Commands, asset_server: Res<AssetServer>) {
 struct GameTextures {
     player: Handle<Image>,
     enemy: Handle<Image>,
+    bullet: Handle<Image>,
 }
 
 #[derive(Component)]
-struct Player;
+struct Player {
+    facing: PlayerFace,
+    shooting: bool,
+}
+
+enum PlayerFace {
+    Left,
+    Right,
+    Up,
+    Down,
+}
 
 #[derive(Component)]
 struct Enemy;
+
+#[derive(Component)]
+struct Bullet;
 
 #[derive(Component)]
 struct Velocity {
