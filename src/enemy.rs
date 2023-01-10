@@ -1,6 +1,8 @@
 use crate::Enemy;
 use crate::GameTextures;
+use crate::SpriteSize;
 use crate::Velocity;
+use crate::ENEMY_SPRITE_SIZE;
 use crate::{BASE_SPEED, TIME_STEP};
 use bevy::prelude::*;
 
@@ -23,6 +25,7 @@ fn add_enemy(mut commands: Commands, game_textures: Res<GameTextures>) {
             },
             ..Default::default()
         })
+        .insert(SpriteSize::from(ENEMY_SPRITE_SIZE))
         .insert(Enemy)
         .insert(Velocity { x: 0.1, y: 0.0 });
 }

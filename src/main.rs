@@ -1,15 +1,17 @@
 use bevy::prelude::*;
 use bevy::window::{PresentMode, Windows};
 
+mod bullet;
 mod enemy;
 mod player;
-mod bullet;
 
 const WINDOW_WIDTH: f32 = 640.0;
 const WINDOW_HEIGHT: f32 = 480.0;
 const PLAYER_SPRITE: &str = "player.png";
 const ENEMY_SPRITE: &str = "enemy.png";
+const ENEMY_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const BULLET_SPRITE: &str = "bullet.png";
+const BULLET_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const TIME_STEP: f32 = 1.0 / 60.0;
 const BASE_SPEED: f32 = 200.0;
 
@@ -86,4 +88,13 @@ struct Bullet;
 struct Velocity {
     x: f32,
     y: f32,
+}
+
+#[derive(Component)]
+struct SpriteSize(Vec2);
+
+impl From<(f32, f32)> for SpriteSize {
+    fn from(val: (f32, f32)) -> Self {
+        SpriteSize(Vec2::new(val.0, val.1))
+    }
 }

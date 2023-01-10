@@ -1,9 +1,13 @@
+use crate::Bullet;
+use crate::Enemy;
 use crate::GameTextures;
 use crate::Player;
+use crate::PlayerFace;
+use crate::SpriteSize;
 use crate::Velocity;
 use crate::{BASE_SPEED, TIME_STEP};
-use crate::PlayerFace;
 use bevy::prelude::*;
+use bevy::sprite::collide_aabb::collide;
 
 pub struct PlayerPlugin;
 
@@ -11,7 +15,8 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system_to_stage(StartupStage::PostStartup, add_player)
             .add_system(hanlde_input)
-            .add_system(move_player);
+            .add_system(move_player)
+            .add_system(destroy_enemy);
     }
 }
 
@@ -25,7 +30,10 @@ fn add_player(mut commands: Commands, game_textures: Res<GameTextures>) {
             },
             ..Default::default()
         })
-        .insert(Player {facing: PlayerFace::Right, shooting: false })
+        .insert(Player {
+            facing: PlayerFace::Right,
+            shooting: false,
+        })
         .insert(Velocity { x: 0.0, y: 0.0 });
 }
 
@@ -56,11 +64,31 @@ fn hanlde_input(input: Res<Input<KeyCode>>, mut query: Query<(&mut Velocity, &mu
     }
 }
 
-
 fn move_player(mut query: Query<(&Velocity, &mut Transform), With<Player>>) {
     for (velocity, mut transform) in query.iter_mut() {
         let translation = &mut transform.translation;
         translation.x += velocity.x * TIME_STEP * BASE_SPEED;
         translation.y += velocity.y * TIME_STEP * BASE_SPEED;
+    }
+}
+
+fn destroy_enemy(
+    mut commands: Commands,
+    bullet_query: Query<(Entity, &Transform, &SpriteSize), With<Bullet>>,
+    enemy_query: Query<(Entity, &Transform, &SpriteSize), With<Enemy>>,
+) {
+    for (bullet_entity, bullet_tf, bullet_size) in bullet_query.iter() {
+        for (enemy_entity, enemy_tf, enemy_size) in enemy_query.iter() {
+            let collision = collide(
+                bullet_tf.translation,
+                bullet_size.0,
+                enemy_tf.translation,
+                enemy_size.0,
+            );
+            if let Some(_) = collision {
+                commands.entity(bullet_entity).despawn();
+                commands.entity(enemy_entity).despawn();
+            }
+        }
     }
 }
