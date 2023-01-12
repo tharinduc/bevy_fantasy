@@ -1,13 +1,15 @@
+use crate::Barrier;
 use crate::Bullet;
 use crate::Enemy;
 use crate::GameTextures;
-use crate::Player;
 use crate::PlayerFace;
 use crate::SpriteSize;
 use crate::Velocity;
+use crate::PLAYER_SPRITE_SIZE;
+use crate::{Player, PlayerId};
 use crate::{BASE_SPEED, TIME_STEP};
 use bevy::prelude::*;
-use bevy::sprite::collide_aabb::collide;
+use bevy::sprite::collide_aabb::{collide, Collision};
 
 pub struct PlayerPlugin;
 
@@ -16,6 +18,7 @@ impl Plugin for PlayerPlugin {
         app.add_startup_system_to_stage(StartupStage::PostStartup, add_player)
             .add_system(hanlde_input)
             .add_system(move_player)
+            .add_system(detect_path)
             .add_system(destroy_enemy);
     }
 }
@@ -30,15 +33,20 @@ fn add_player(mut commands: Commands, game_textures: Res<GameTextures>) {
             },
             ..Default::default()
         })
+        .insert(PlayerId)
         .insert(Player {
             facing: PlayerFace::Right,
             shooting: false,
         })
+        .insert(SpriteSize::from(PLAYER_SPRITE_SIZE))
         .insert(Velocity { x: 0.0, y: 0.0 });
 }
 
-fn hanlde_input(input: Res<Input<KeyCode>>, mut query: Query<(&mut Velocity, &mut Player)>) {
-    for (mut velocity, mut player) in query.iter_mut() {
+fn hanlde_input(
+    input: Res<Input<KeyCode>>,
+    mut player_query: Query<(&mut Velocity, &mut Player), With<PlayerId>>,
+) {
+    for (mut velocity, mut player) in player_query.iter_mut() {
         if input.pressed(KeyCode::Left) {
             velocity.x = -1.0;
             player.facing = PlayerFace::Left;
@@ -64,11 +72,49 @@ fn hanlde_input(input: Res<Input<KeyCode>>, mut query: Query<(&mut Velocity, &mu
     }
 }
 
-fn move_player(mut query: Query<(&Velocity, &mut Transform), With<Player>>) {
-    for (velocity, mut transform) in query.iter_mut() {
-        let translation = &mut transform.translation;
-        translation.x += velocity.x * TIME_STEP * BASE_SPEED;
-        translation.y += velocity.y * TIME_STEP * BASE_SPEED;
+fn detect_path(
+    mut player_query: Query<(&mut Velocity, &Transform, &SpriteSize), With<PlayerId>>,
+    wall_query: Query<(&Transform, &SpriteSize), With<Barrier>>,
+) {
+    for (mut player_velocity, player_tf, player_size) in player_query.iter_mut() {
+        for (wall_tf, wall_size) in wall_query.iter() {
+            let collision = collide(
+                wall_tf.translation,
+                wall_size.0,
+                player_tf.translation,
+                player_size.0
+            );
+
+            if let Some(face) = collision {
+                match face {
+                    Collision::Top => {
+                        println!("collided up");
+                        player_velocity.y = -1.0;
+                    }
+                    Collision::Bottom => {
+                        println!("collided down");
+                        player_velocity.y = 1.0;
+                    }
+                    Collision::Right => {
+                        println!("collided right");
+                        player_velocity.x = -1.0;
+                    }
+                    Collision::Left => {
+                        println!("collided left");
+                        player_velocity.x = 1.0;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+}
+
+fn move_player(mut player_query: Query<(&Velocity, &mut Transform), With<PlayerId>>) {
+    for (player_velocity, mut player_tf) in player_query.iter_mut() {
+        let translation = &mut player_tf.translation;
+        translation.x += player_velocity.x * TIME_STEP * BASE_SPEED;
+        translation.y += player_velocity.y * TIME_STEP * BASE_SPEED;
     }
 }
 
@@ -86,6 +132,7 @@ fn destroy_enemy(
                 enemy_size.0,
             );
             if let Some(_) = collision {
+                println!("despawn bullet");
                 commands.entity(bullet_entity).despawn();
                 commands.entity(enemy_entity).despawn();
             }

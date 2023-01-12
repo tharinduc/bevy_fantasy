@@ -21,8 +21,8 @@ fn add_bullet(
     mut commands: Commands,
     game_textures: Res<GameTextures>,
     query: Query<(&Player, &Transform), With<Player>>,
-) {
-    for (player, transform) in query.iter() {
+    ) {
+        for (player, transform) in query.iter() {
         let velocity_x: f32;
         let velocity_y: f32;
         match player.facing {

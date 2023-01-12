@@ -4,14 +4,20 @@ use bevy::window::{PresentMode, Windows};
 mod bullet;
 mod enemy;
 mod player;
+mod wall;
 
 const WINDOW_WIDTH: f32 = 640.0;
 const WINDOW_HEIGHT: f32 = 480.0;
 const PLAYER_SPRITE: &str = "player.png";
+const PLAYER_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const ENEMY_SPRITE: &str = "enemy.png";
 const ENEMY_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const BULLET_SPRITE: &str = "bullet.png";
 const BULLET_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
+const WALL_SPRITE: &str = "wall.png";
+const WALL_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
+const DOOR_SPRITE: &str = "door.png";
+const DOOR_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const TIME_STEP: f32 = 1.0 / 60.0;
 const BASE_SPEED: f32 = 200.0;
 
@@ -32,6 +38,7 @@ fn main() {
         .add_plugin(player::PlayerPlugin)
         .add_plugin(enemy::EnemyPlugin)
         .add_plugin(bullet::BulletPlugin)
+        .add_plugin(wall::WallPlugin)
         .add_startup_system_to_stage(StartupStage::PreStartup, load_textures)
         .add_startup_system(setup)
         .add_system(close_window)
@@ -54,6 +61,8 @@ fn load_textures(mut commands: Commands, asset_server: Res<AssetServer>) {
         player: asset_server.load(PLAYER_SPRITE),
         enemy: asset_server.load(ENEMY_SPRITE),
         bullet: asset_server.load(BULLET_SPRITE),
+        wall: asset_server.load(WALL_SPRITE),
+        door: asset_server.load(DOOR_SPRITE),
     };
     commands.insert_resource(game_textures);
 }
@@ -63,7 +72,12 @@ struct GameTextures {
     player: Handle<Image>,
     enemy: Handle<Image>,
     bullet: Handle<Image>,
+    wall: Handle<Image>,
+    door: Handle<Image>,
 }
+
+#[derive(Component)]
+struct PlayerId;
 
 #[derive(Component)]
 struct Player {
@@ -76,6 +90,11 @@ enum PlayerFace {
     Right,
     Up,
     Down,
+}
+
+#[derive(Component)]
+struct Barrier {
+    destructible: bool,
 }
 
 #[derive(Component)]
