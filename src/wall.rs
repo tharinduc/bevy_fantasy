@@ -2,6 +2,7 @@ use crate::Barrier;
 use crate::GameTextures;
 use crate::SpriteSize;
 use crate::WALL_SPRITE_SIZE;
+use crate::DOOR_SPRITE_SIZE;
 use bevy::prelude::*;
 
 pub struct WallPlugin;
@@ -31,6 +32,10 @@ fn add_walls(mut commands: Commands, game_textures: Res<GameTextures>) {
                     destructible: false,
                 });
         }
-        x = x + WALL_SPRITE_SIZE.0;
+        if n ==3 {
+            x = x + DOOR_SPRITE_SIZE.0;
+        } else {
+            x = x + WALL_SPRITE_SIZE.0;
+        }
     }
 }

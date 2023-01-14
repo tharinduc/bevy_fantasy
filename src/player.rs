@@ -8,8 +8,10 @@ use crate::Velocity;
 use crate::PLAYER_SPRITE_SIZE;
 use crate::{Player, PlayerId};
 use crate::{BASE_SPEED, TIME_STEP};
+use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use bevy::prelude::*;
 use bevy::sprite::collide_aabb::{collide, Collision};
+use bevy_egui::{egui, EguiContext};
 
 pub struct PlayerPlugin;
 
@@ -74,36 +76,49 @@ fn hanlde_input(
 
 fn detect_path(
     mut player_query: Query<(&mut Velocity, &Transform, &SpriteSize), With<PlayerId>>,
-    wall_query: Query<(&Transform, &SpriteSize), With<Barrier>>,
+    wall_query: Query<(&Transform, &SpriteSize, &Barrier)>,
+    input: Res<Input<KeyCode>>,
+    mut egui_ctx: ResMut<EguiContext>,
 ) {
     for (mut player_velocity, player_tf, player_size) in player_query.iter_mut() {
-        for (wall_tf, wall_size) in wall_query.iter() {
+        for (wall_tf, wall_size, barrier) in wall_query.iter() {
             let collision = collide(
                 wall_tf.translation,
                 wall_size.0,
                 player_tf.translation,
-                player_size.0
+                player_size.0,
             );
 
             if let Some(face) = collision {
                 match face {
                     Collision::Top => {
-                        println!("collided up");
                         player_velocity.y = -1.0;
                     }
                     Collision::Bottom => {
-                        println!("collided down");
                         player_velocity.y = 1.0;
                     }
                     Collision::Right => {
-                        println!("collided right");
                         player_velocity.x = -1.0;
                     }
                     Collision::Left => {
-                        println!("collided left");
                         player_velocity.x = 1.0;
                     }
                     _ => {}
+                }
+
+                if barrier.destructible {
+                    egui::Window::new("")
+                        .title_bar(false)
+                        .fixed_pos((
+                            player_tf.translation.x + WINDOW_WIDTH / 2.0,
+                            player_tf.translation.y + WINDOW_HEIGHT / 2.0,
+                        ))
+                        .show(egui_ctx.ctx_mut(), |ui| {
+                            ui.label("world");
+                        });
+                    if input.just_pressed(KeyCode::X) {
+                        println!("open door");
+                    }
                 }
             }
         }

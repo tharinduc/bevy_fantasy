@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 use bevy::window::{PresentMode, Windows};
+use bevy_egui::EguiPlugin;
 
 mod bullet;
 mod enemy;
 mod player;
 mod wall;
+mod door;
 
 const WINDOW_WIDTH: f32 = 640.0;
 const WINDOW_HEIGHT: f32 = 480.0;
@@ -17,7 +19,7 @@ const BULLET_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const WALL_SPRITE: &str = "wall.png";
 const WALL_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
 const DOOR_SPRITE: &str = "door.png";
-const DOOR_SPRITE_SIZE: (f32, f32) = (32.0, 32.0);
+const DOOR_SPRITE_SIZE: (f32, f32) = (48.0, 32.0);
 const TIME_STEP: f32 = 1.0 / 60.0;
 const BASE_SPEED: f32 = 200.0;
 
@@ -35,10 +37,12 @@ fn main() {
             },
             ..default()
         }))
+        .add_plugin(EguiPlugin)
         .add_plugin(player::PlayerPlugin)
         .add_plugin(enemy::EnemyPlugin)
         .add_plugin(bullet::BulletPlugin)
         .add_plugin(wall::WallPlugin)
+        .add_plugin(door::DoorPlugin)
         .add_startup_system_to_stage(StartupStage::PreStartup, load_textures)
         .add_startup_system(setup)
         .add_system(close_window)
@@ -117,3 +121,4 @@ impl From<(f32, f32)> for SpriteSize {
         SpriteSize(Vec2::new(val.0, val.1))
     }
 }
+
