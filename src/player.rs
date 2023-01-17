@@ -3,6 +3,7 @@ use crate::Bullet;
 use crate::Enemy;
 use crate::GameTextures;
 use crate::PlayerFace;
+use crate::PlayerPosition;
 use crate::SpriteSize;
 use crate::Velocity;
 use crate::PLAYER_SPRITE_SIZE;
@@ -40,6 +41,7 @@ fn add_player(mut commands: Commands, game_textures: Res<GameTextures>) {
             facing: PlayerFace::Right,
             shooting: false,
         })
+        .insert(PlayerPosition { x: -150.0, y: -200.0 })
         .insert(SpriteSize::from(PLAYER_SPRITE_SIZE))
         .insert(Velocity { x: 0.0, y: 0.0 });
 }
@@ -75,12 +77,14 @@ fn hanlde_input(
 }
 
 fn detect_path(
-    mut player_query: Query<(&mut Velocity, &Transform, &SpriteSize), With<PlayerId>>,
+    mut player_query: Query<(&mut Velocity, &Transform, &SpriteSize, ChangeTrackers<PlayerPosition>), With<PlayerId>>,
     wall_query: Query<(&Transform, &SpriteSize, &Barrier)>,
     input: Res<Input<KeyCode>>,
     mut egui_ctx: ResMut<EguiContext>,
 ) {
-    for (mut player_velocity, player_tf, player_size) in player_query.iter_mut() {
+    for (mut player_velocity, player_tf, player_size, player_pos) in player_query.iter_mut() {
+        if player_pos.is_changed() {
+        println!("player pos: {}", player_tf.translation);
         for (wall_tf, wall_size, barrier) in wall_query.iter() {
             let collision = collide(
                 wall_tf.translation,
@@ -114,7 +118,14 @@ fn detect_path(
                             player_tf.translation.y + WINDOW_HEIGHT / 2.0,
                         ))
                         .show(egui_ctx.ctx_mut(), |ui| {
-                            ui.label("world");
+                            //ui.label("world");
+
+                            let mut selected = "First";
+                            egui::ComboBox::from_id_source("door_options").show_ui(ui, |ui| {
+                                ui.selectable_value(&mut selected, "First", "First");
+                                ui.selectable_value(&mut selected, "Second", "Second");
+                                ui.selectable_value(&mut selected, "Third", "Third");
+                            });
                         });
                     if input.just_pressed(KeyCode::X) {
                         println!("open door");
@@ -122,14 +133,19 @@ fn detect_path(
                 }
             }
         }
+        }
     }
 }
 
-fn move_player(mut player_query: Query<(&Velocity, &mut Transform), With<PlayerId>>) {
-    for (player_velocity, mut player_tf) in player_query.iter_mut() {
+fn move_player(mut player_query: Query<(&Velocity, &mut Transform, &mut PlayerPosition), With<PlayerId>>) {
+    for (player_velocity, mut player_tf, mut player_pos) in player_query.iter_mut() {
         let translation = &mut player_tf.translation;
         translation.x += player_velocity.x * TIME_STEP * BASE_SPEED;
         translation.y += player_velocity.y * TIME_STEP * BASE_SPEED;
+        if player_pos.x != translation.x || player_pos.y != translation.y {
+        player_pos.x = translation.x;
+        player_pos.y = translation.y;
+        }
     }
 }
 

@@ -89,6 +89,12 @@ struct Player {
     shooting: bool,
 }
 
+#[derive(Component)]
+struct PlayerPosition {
+    x: f32,
+    y:f32,
+}
+
 enum PlayerFace {
     Left,
     Right,
